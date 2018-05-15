@@ -30,13 +30,13 @@ import net.sf.json.JSONObject;
  *
  * .............................................* 
  * 						<p>
- * 				 服务接口多线程并发测试工具类
+ * 			 服务接口多线程并发测试工具类
  * 						</p>
  * 						<p>
  * 		 	Copyright: Copyright (c) 2018
  * 						</p>
  * 						<p>
- *          	        佛系代码             BUG随缘
+ *            佛系代码          BUG随缘
  * 						</p>
  * 			 	   @author MoonLo
  * 	  	   @version 1.0 2018-4-12 09:07:08
@@ -195,7 +195,7 @@ public class ThreadUtils {
  * Copyright: Copyright (c) 2013
  * </p>
  * <p>
- * Company: 中通供应链管理有限公司
+ * Company: UD
  * </p>
  * @author MoonLo
  * @version 2018-4-12 上午9:10:49
