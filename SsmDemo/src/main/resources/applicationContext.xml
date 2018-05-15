@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:aop="http://www.springframework.org/schema/aop"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:tx="http://www.springframework.org/schema/tx"
+       xsi:schemaLocation="
+        http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/aop
+        http://www.springframework.org/schema/aop/spring-aop-4.3.xsd
+        http://www.springframework.org/schema/tx
+        http://www.springframework.org/schema/tx/spring-tx-4.3.xsd
+        http://www.springframework.org/schema/context
+        http://www.springframework.org/schema/context/spring-context-4.3.xsd  " >
+
+    <!-- 自动扫描该包，使SpringMVC认为包下用了@controller注解的类是控制器 -->
+    <context:component-scan base-package="ssm" />
+
+    <!--避免IE执行AJAX时，返回JSON出现下载文件 -->
+    <bean id="mappingJackson2HttpMessageConverter"
+          class="org.springframework.http.converter.json.MappingJackson2HttpMessageConverter">
+        <property name="supportedMediaTypes">
+            <list>
+                <value>text/html;charset=UTF-8</value>
+            </list>
+        </property>
+    </bean>
+    <!-- 启动SpringMVC的注解功能，完成请求和注解POJO的映射 -->
+    <bean
+            class="org.springframework.web.servlet.mvc.annotation.AnnotationMethodHandlerAdapter">
+        <property name="messageConverters">
+            <list>
+                <ref bean="mappingJackson2HttpMessageConverter" />	<!-- JSON转换器 -->
+            </list>
+        </property>
+    </bean>
+
+    <!-- 1.1 关联jdbc.properties -->
+    <context:property-placeholder location="classpath:jdbc.properties"/>
+
+    <!-- 01.配置数据源 -->
+    <bean id="dataSource" class="com.alibaba.druid.pool.DruidDataSource" destroy-method="close">
+        <!-- 数据库基本信息配置 -->
+        <property name="url" value="${ztne.druid.master.url}" />
+        <property name="username" value="${ztne.druid.master.username}" />
+        <property name="password" value="${ztne.druid.master.password}" />
+        <property name="driverClassName" value="${ztne.druid.master.driverClassName}" />
+        <property name="filters" value="${ztne.druid.master.filters}" />
+        <!-- 最大并发连接数 -->
+        <property name="maxActive" value="${ztne.druid.master.maxActive}" />
+        <!-- 初始化连接数量 -->
+        <property name="initialSize" value="${ztne.druid.master.initialSize}" />
+        <!-- 配置获取连接等待超时的时间 -->
+        <property name="maxWait" value="${ztne.druid.master.maxWait}" />
+        <!-- 最小空闲连接数 -->
+        <property name="minIdle" value="${ztne.druid.master.minIdle}" />
+        <!-- 配置间隔多久才进行一次检测，检测需要关闭的空闲连接，单位是毫秒 -->
+        <property name="timeBetweenEvictionRunsMillis"
+                  value="${ztne.druid.master.timeBetweenEvictionRunsMillis}" />
+        <!-- 配置一个连接在池中最小生存的时间，单位是毫秒 -->
+        <property name="minEvictableIdleTimeMillis"
+                  value="${ztne.druid.master.minEvictableIdleTimeMillis}" />
+        <property name="validationQuery" value="${ztne.druid.master.validationQuery}" />
+        <property name="testWhileIdle" value="${ztne.druid.master.testWhileIdle}" />
+        <property name="testOnBorrow" value="${ztne.druid.master.testOnBorrow}" />
+        <property name="testOnReturn" value="${ztne.druid.master.testOnReturn}" />
+        <property name="maxOpenPreparedStatements"
+                  value="${ztne.druid.master.maxOpenPreparedStatements}" />
+        <!-- 打开removeAbandoned功能 -->
+        <property name="removeAbandoned" value="${ztne.druid.master.removeAbandoned}" />
+        <!-- 1800秒，也就是30分钟 -->
+        <property name="removeAbandonedTimeout" value="${ztne.druid.master.removeAbandonedTimeout}" />
+        <!-- 关闭abanded连接时输出错误日志 -->
+        <property name="logAbandoned" value="${ztne.druid.master.logAbandoned}" />
+    </bean>
+
+    <!-- spring和MyBatis完美整合，不需要mybatis的配置映射文件 -->
+    <bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+        <property name="dataSource" ref="dataSource" />
+        <property name="configLocation" value="classpath:/mybatis-config.xml"></property>
+        <!-- 自动扫描mapping.xml文件 -->
+        <property name="mapperLocations" value="classpath:ssm/**/*SqlMap.xml"></property>
+
+    </bean>
+
+    <!-- DAO接口所在包名，Spring会自动查找其下的类 -->
+    <bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+        <property name="basePackage" value="ssm.dao" />
+        <property name="sqlSessionFactoryBeanName" value="sqlSessionFactory"></property>
+    </bean>
+
+    <!-- 06.配置事务管理器 -->
+    <bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+        <property name="dataSource" ref="dataSource"></property>
+    </bean>
+    <aop:config proxy-target-class="true">
+        <aop:advisor pointcut="execution(* ssm.service..*ServiceImpl.*(..))" advice-ref="txAdvice"/>
+    </aop:config>
+
+    <!-- 07.配置开启事务操作 -->
+    <tx:advice id="txAdvice" transaction-manager="transactionManager">
+        <tx:attributes>
+            <!--指定在连接方法上应用的事务属性 -->
+            <tx:method name="add*" isolation="DEFAULT" propagation="REQUIRED"/>
+            <tx:method name="do*" read-only="false" propagation="REQUIRED"
+                       rollback-for="com.thinkjf.service.ServiceException,Exception"/>
+            <tx:method name="get*" read-only="true"/>
+            <tx:method name="query*" read-only="true"/>
+            <tx:method name="search*" read-only="true"/>
+            <tx:method name="find*" read-only="true"/>
+            <tx:method name="mergeEwbs*" read-only="false" propagation="REQUIRES_NEW"
+                       rollback-for="com.thinkjf.service.ServiceException,Exception,Throwable"/>
+        </tx:attributes>
+    </tx:advice>
+
+    <!-- aop配置 -->
+    <aop:config>
+        <aop:pointcut expression="execution(* *..service.*.*(..))" id="stockPointcut"/>
+        <aop:advisor advice-ref="txAdvice" pointcut-ref="stockPointcut"/>
+    </aop:config>
+
+</beans>
