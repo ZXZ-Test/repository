@@ -63,7 +63,7 @@ public class ApiDemo {
 		final PostMethod postMethod = new PostMethod(url);// chenfen.f3322.org
 		postMethod.addRequestHeader("Content-Type",
 				"application/x-www-form-urlencoded;charset=utf-8");
-		postMethod.setRequestBody(nameValueList
+		postMethod.setRequestBody( nameValueList
 				.toArray(new NameValuePair[nameValueList.size()]));
 		postMethod.addRequestHeader("Connection", "close");
 		String result = null;
